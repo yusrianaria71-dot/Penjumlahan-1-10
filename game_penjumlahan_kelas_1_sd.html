@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ayo Belajar Menjumlah! - Kelas 1 SD</title>
+    <!-- Load Font dari Google Fonts (Balsamiq Sans untuk kesan ramah anak) -->
+    <link href="https://fonts.googleapis.com/css2?family=Balsamiq+Sans:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'kids': ['"Balsamiq Sans"', 'cursive'],
+                    },
+                    colors: {
+                        'sky-blue': '#87CEEB',
+                        'grass-green': '#90EE90',
+                        'sun-yellow': '#FFD700',
+                        'apple-red': '#FF6347',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Balsamiq Sans', cursive;
+            background: linear-gradient(to bottom, #87CEEB 0%, #E0F6FF 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            touch-action: manipulation; /* Mencegah zoom tidak sengaja di mobile */
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Animasi mengambang untuk awan */
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        .cloud {
+            animation: float 4s ease-in-out infinite;
+        }
+        .cloud-delayed {
+            animation: float 5s ease-in-out infinite 2s;
+        }
+
+        /* Animasi pop untuk objek yang muncul */
+        @keyframes popIn {
+            0% { transform: scale(0); opacity: 0; }
+            80% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .pop-in {
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        /* Tombol interaktif */
+        .btn-kid {
+            transition: all 0.2s ease;
+            box-shadow: 0 6px 0 rgba(0,0,0,0.2);
+        }
+        .btn-kid:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 rgba(0,0,0,0.2);
+        }
+        
+        .answer-btn {
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 8px 0 rgba(0,0,0,0.15);
+        }
+        .answer-btn:active {
+            transform: translateY(6px);
+            box-shadow: 0 2px 0 rgba(0,0,0,0.15);
+        }
+        .answer-btn:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 10px 0 rgba(0,0,0,0.15);
+        }
+        
+        /* Objek benda untuk dihitung */
+        .item-icon {
+            font-size: clamp(2rem, 8vw, 4rem);
+            display: inline-block;
+            margin: 2px;
+            filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.2));
+            transition: transform 0.2s;
+        }
+        .item-icon:hover {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        /* Confetti (dibuat via JS, tapi butuh style dasar) */
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #f00;
+            z-index: 100;
+        }
+
+        /* Styling area permainan agar responsif */
+        #game-container {
+            display: none; /* Sembunyikan awalnya */
+        }
+        #result-container {
+            display: none;
+        }
+
+        /* Feedback animasi (Benar/Salah) */
+        .feedback-text {
+            font-size: clamp(3rem, 10vw, 5rem);
+            font-weight: bold;
+            text-shadow: 3px 3px 0 #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            z-index: 50;
+            pointer-events: none;
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .feedback-show {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+        }
+
+        /* Hiasan latar belakang */
+        .bg-element {
+            position: fixed;
+            z-index: -1;
+            opacity: 0.7;
+        }
+        .grass-bottom {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 20vh;
+            background-color: #90EE90; /* Hijau rumput */
+            border-top: 5px solid #7bc07b;
+            border-radius: 50% 50% 0 0 / 20px 20px 0 0;
+            z-index: -1;
+        }
+    </style>
+</head>
+<body class="text-gray-800 relative select-none">
+
+    <!-- Hiasan Awan -->
+    <div class="bg-element cloud text-white text-6xl top-10 left-10">☁️</div>
+    <div class="bg-element cloud-delayed text-white text-8xl top-24 right-20">☁️</div>
+    <div class="bg-element cloud text-white text-5xl top-40 left-1/3">☁️</div>
+    <div class="bg-element text-yellow-300 text-7xl top-5 right-5 animate-pulse">☀️</div>
+    
+    <!-- Rumput di bawah -->
+    <div class="grass-bottom"></div>
+
+    <!-- Container Utama -->
+    <div class="container mx-auto px-4 py-8 h-screen flex flex-col justify-center items-center relative z-10 max-w-4xl">
+
+        <!-- SCREEN 1: START SCREEN -->
+        <div id="start-screen" class="w-full text-center bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-2xl border-4 border-white pop-in">
+            <h1 class="text-4xl md:text-6xl font-bold text-blue-600 mb-6 drop-shadow-md">
+                Ayo Belajar<br><span class="text-apple-red">Menjumlah!</span>
+            </h1>
+            <p class="text-xl md:text-2xl mb-8 text-gray-700">Kita hitung barang-barang seru sama-sama yuk!</p>
+            
+            <button onclick="startGame()" class="btn-kid bg-sun-yellow text-orange-600 font-bold text-3xl py-4 px-10 rounded-full border-4 border-orange-400 hover:bg-yellow-300">
+                Mulai Main! 🚀
+            </button>
+            <div class="mt-6 flex justify-center gap-4 text-4xl">
+                <span>🍎</span><span>🦆</span><span>🎈</span><span>🚗</span>
+            </div>
+        </div>
+
+        <!-- SCREEN 2: GAME SCREEN -->
+        <div id="game-screen" class="w-full hidden flex-col items-center">
+            
+            <!-- Header (Skor dan Progress) -->
+            <div class="w-full flex justify-between items-center mb-4 bg-white/90 p-4 rounded-2xl shadow-lg border-2 border-white">
+                <div class="text-xl md:text-2xl font-bold text-blue-600">
+                    Bintang: <span id="score" class="text-sun-yellow text-3xl">⭐ 0</span>
+                </div>
+                <div class="text-xl md:text-2xl font-bold text-green-600">
+                    Soal: <span id="question-counter">1/5</span>
+                </div>
+            </div>
+
+            <!-- Area Soal Visual -->
+            <div class="w-full bg-white/95 rounded-3xl p-6 shadow-xl border-4 border-sky-blue mb-6 flex flex-col items-center">
+                
+                <h2 class="text-2xl md:text-3xl text-gray-700 font-bold mb-4 text-center">Berapa jumlah semuanya?</h2>
+
+                <!-- Area Benda yang dihitung -->
+                <div class="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8 w-full mb-6 min-h-[150px]">
+                    <!-- Kelompok 1 -->
+                    <div id="group1" class="flex flex-wrap justify-center items-center bg-blue-50 p-4 rounded-2xl border-2 border-blue-200 min-w-[120px] max-w-[200px]">
+                        <!-- Objek di-generate oleh JS -->
+                    </div>
+                    
+                    <!-- Simbol Tambah -->
+                    <div class="text-5xl md:text-6xl font-bold text-gray-400">
+                        +
+                    </div>
+
+                    <!-- Kelompok 2 -->
+                    <div id="group2" class="flex flex-wrap justify-center items-center bg-green-50 p-4 rounded-2xl border-2 border-green-200 min-w-[120px] max-w-[200px]">
+                        <!-- Objek di-generate oleh JS -->
+                    </div>
+                </div>
+
+                <!-- Persamaan Matematika -->
+                <div class="text-4xl md:text-6xl font-bold text-gray-700 flex items-center justify-center gap-4 bg-gray-100 py-3 px-8 rounded-full border-2 border-gray-300">
+                    <span id="num1" class="text-blue-500">?</span> 
+                    <span>+</span> 
+                    <span id="num2" class="text-green-500">?</span> 
+                    <span>=</span> 
+                    <span class="text-apple-red border-b-4 border-dashed border-apple-red w-12 text-center inline-block">?</span>
+                </div>
+            </div>
+
+            <!-- Pilihan Jawaban -->
+            <div id="options" class="grid grid-cols-3 md:grid-cols-5 gap-4 w-full">
+                <!-- Tombol jawaban di-generate oleh JS -->
+            </div>
+            
+        </div>
+
+        <!-- SCREEN 3: RESULT SCREEN -->
+        <div id="result-screen" class="w-full hidden text-center bg-white/90 backdrop-blur-sm rounded-3xl p-8 shadow-2xl border-4 border-white">
+            <h2 class="text-4xl md:text-5xl font-bold text-blue-600 mb-4">Horeee! Selesai! 🎉</h2>
+            
+            <div class="my-8">
+                <p class="text-2xl text-gray-700 mb-2">Bintang yang kamu dapat:</p>
+                <div id="final-stars" class="text-5xl md:text-7xl mb-4 flex justify-center flex-wrap gap-2">
+                    <!-- Bintang dimunculkan di sini -->
+                </div>
+                <p id="final-message" class="text-2xl md:text-3xl font-bold text-green-500"></p>
+            </div>
+            
+            <button onclick="resetGame()" class="btn-kid bg-sun-yellow text-orange-600 font-bold text-2xl py-3 px-8 rounded-full border-4 border-orange-400 hover:bg-yellow-300 mt-4">
+                Main Lagi! 🔄
+            </button>
+        </div>
+
+        <!-- Elemen Feedback (Benar/Salah) -->
+        <div id="feedback-correct" class="feedback-text text-green-500">Hebat! 🌟</div>
+        <div id="feedback-wrong" class="feedback-text text-red-500">Coba Lagi! 🤔</div>
+
+    </div>
+
+    <!-- Audio Effects (Menggunakan audio base64/sederhana atau sintesis bawaan browser) -->
+    <!-- Catatan: Untuk kepraktisan dalam satu file, kita gunakan Web Audio API sederhana di JS -->
+
+    <script>
+        // --- DATA & STATE ---
+        const EMOJIS = ['🍎', '🍌', '🚗', '🎈', '⭐', '🐶', '🐱', '⚽', '🍓', '🦆'];
+        const TOTAL_QUESTIONS = 5;
+        
+        let currentQuestion = 0;
+        let score = 0;
+        let correctAnswer = 0;
+        let isWaiting = false; // Mencegah spam klik
+
+        // Elemen DOM
+        const startScreen = document.getElementById('start-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const resultScreen = document.getElementById('result-screen');
+        const group1El = document.getElementById('group1');
+        const group2El = document.getElementById('group2');
+        const num1El = document.getElementById('num1');
+        const num2El = document.getElementById('num2');
+        const optionsEl = document.getElementById('options');
+        const scoreEl = document.getElementById('score');
+        const qCounterEl = document.getElementById('question-counter');
+        const feedbackCorrect = document.getElementById('feedback-correct');
+        const feedbackWrong = document.getElementById('feedback-wrong');
+
+        // --- AUDIO SYSTEM (Sederhana menggunakan Web Audio API) ---
+        // Membuat nada sederhana agar tidak perlu file mp3 eksternal
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            if (type === 'correct') {
+                // Nada ceria (C mayor chord arpeggio)
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                oscillator.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1); // E5
+                oscillator.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.2); // G5
+                oscillator.frequency.setValueAtTime(1046.50, audioCtx.currentTime + 0.3); // C6
+                
+                gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.5, audioCtx.currentTime + 0.05);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+                
+                oscillator.start(audioCtx.currentTime);
+                oscillator.stop(audioCtx.currentTime + 0.5);
+                
+            } else if (type === 'wrong') {
+                // Nada rendah
+                oscillator.type = 'triangle';
+                oscillator.frequency.setValueAtTime(300, audioCtx.currentTime);
+                oscillator.frequency.linearRampToValueAtTime(150, audioCtx.currentTime + 0.3);
+                
+                gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.5, audioCtx.currentTime + 0.1);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+                
+                oscillator.start(audioCtx.currentTime);
+                oscillator.stop(audioCtx.currentTime + 0.4);
+            } else if (type === 'pop') {
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.1);
+                
+                gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.02);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                
+                oscillator.start(audioCtx.currentTime);
+                oscillator.stop(audioCtx.currentTime + 0.1);
+            }
+        }
+
+        function startGame() {
+            playSound('pop');
+            startScreen.classList.add('hidden');
+            resultScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+            gameScreen.classList.add('flex');
+            
+            // Reset state
+            currentQuestion = 1;
+            score = 0;
+            updateUI();
+            generateQuestion();
+        }
+
+        function updateUI() {
+            scoreEl.innerHTML = `⭐ ${score}`;
+            qCounterEl.innerText = `${currentQuestion}/${TOTAL_QUESTIONS}`;
+        }
+
+        function generateQuestion() {
+            isWaiting = false;
+            
+            // Generate angka acak untuk penjulahan (total maksimal 10)
+            // Agar tidak membosankan, kita pastikan num1 dan num2 minimal 1 (kecuali kadang-kadang 0 untuk variasi)
+            let maxTotal = 10;
+            let num1 = Math.floor(Math.random() * (maxTotal - 1)) + 1; // 1 to 9
+            let maxNum2 = maxTotal - num1;
+            let num2 = Math.floor(Math.random() * maxNum2) + 1; // 1 to maxNum2
+            
+            // Jika hasilnya kebetulan < 2, kita set manual agar seru
+            if (num1 + num2 < 2) {
+                num1 = 2; num2 = 3;
+            }
+
+            correctAnswer = num1 + num2;
+
+            // Pilih emoji acak untuk soal ini
+            const emoji = EMOJIS[Math.floor(Math.random() * EMOJIS.length)];
+
+            // Tampilkan benda
+            renderItems(group1El, num1, emoji);
+            renderItems(group2El, num2, emoji);
+
+            // Tampilkan angka
+            num1El.innerText = num1;
+            num2El.innerText = num2;
+
+            // Tampilkan pilihan jawaban (3-5 pilihan tergantung layar, kita pakai 5 untuk kemudahan)
+            generateOptions(correctAnswer);
+        }
+
+        function renderItems(container, count, emoji) {
+            container.innerHTML = ''; // Bersihkan kontainer
+            for (let i = 0; i < count; i++) {
+                const item = document.createElement('span');
+                item.className = 'item-icon pop-in';
+                item.innerText = emoji;
+                // Sedikit delay acak agar munculnya bergantian
+                item.style.animationDelay = `${i * 0.1}s`;
+                container.appendChild(item);
+            }
+        }
+
+        function generateOptions(correct) {
+            optionsEl.innerHTML = '';
+            
+            // Buat array pilihan (jawaban benar + jawaban salah)
+            let options = new Set();
+            options.add(correct);
+            
+            while(options.size < 5) {
+                // Generate angka di sekitar jawaban yang benar (maks 10)
+                let offset = Math.floor(Math.random() * 5) - 2; // -2, -1, 0, 1, 2
+                let wrongAnswer = correct + offset;
+                
+                // Pastikan jawaban salah tidak minus, tidak lebih dari 10, dan tidak sama dengan jawaban benar
+                if (wrongAnswer > 0 && wrongAnswer <= 10 && wrongAnswer !== correct) {
+                    options.add(wrongAnswer);
+                } else {
+                    // Jika out of bounds, paksa random 1-10
+                    let rand = Math.floor(Math.random() * 10) + 1;
+                    if(rand !== correct) options.add(rand);
+                }
+            }
+
+            // Ubah set menjadi array dan acak urutannya (Fisher-Yates shuffle)
+            let optionsArray = Array.from(options);
+            for (let i = optionsArray.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [optionsArray[i], optionsArray[j]] = [optionsArray[j], optionsArray[i]];
+            }
+
+            // Buat tombol untuk setiap pilihan
+            const colors = ['bg-red-400', 'bg-blue-400', 'bg-green-400', 'bg-yellow-400', 'bg-purple-400'];
+            
+            optionsArray.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                const bgColor = colors[index % colors.length];
+                
+                btn.className = `answer-btn ${bgColor} text-white font-bold text-4xl py-6 rounded-2xl border-b-8 border-black/20 pop-in`;
+                btn.style.animationDelay = `${0.3 + (index * 0.1)}s`; // Muncul setelah objek
+                btn.innerText = opt;
+                btn.onclick = () => checkAnswer(opt, btn);
+                optionsEl.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(selected, buttonElement) {
+            if (isWaiting) return; // Cegah klik berulang
+            
+            const buttons = document.querySelectorAll('.answer-btn');
+            
+            if (selected === correctAnswer) {
+                // JAWABAN BENAR
+                isWaiting = true;
+                playSound('correct');
+                score++;
+                updateUI();
+                
+                // Efek visual tombol
+                buttonElement.classList.replace(buttonElement.classList[1], 'bg-green-500'); // Ganti warna jadi hijau kuat
+                buttonElement.classList.add('ring-4', 'ring-white', 'scale-110');
+                
+                // Tampilkan tulisan "Hebat!"
+                feedbackCorrect.classList.add('feedback-show');
+                
+                setTimeout(() => {
+                    feedbackCorrect.classList.remove('feedback-show');
+                    nextQuestion();
+                }, 1500);
+
+            } else {
+                // JAWABAN SALAH
+                playSound('wrong');
+                
+                // Efek visual tombol salah (goyang)
+                buttonElement.classList.add('bg-gray-400', 'opacity-50');
+                buttonElement.style.transform = 'translateX(-10px)';
+                setTimeout(() => buttonElement.style.transform = 'translateX(10px)', 100);
+                setTimeout(() => buttonElement.style.transform = 'translateX(-10px)', 200);
+                setTimeout(() => buttonElement.style.transform = 'translateX(0)', 300);
+                
+                // Disable tombol yang salah
+                buttonElement.disabled = true;
+
+                // Tampilkan tulisan "Coba Lagi"
+                feedbackWrong.classList.add('feedback-show');
+                setTimeout(() => {
+                    feedbackWrong.classList.remove('feedback-show');
+                }, 800);
+            }
+        }
+
+        function nextQuestion() {
+            if (currentQuestion < TOTAL_QUESTIONS) {
+                currentQuestion++;
+                updateUI();
+                
+                // Efek transisi keluar masuk sederhana
+                const questionArea = document.querySelector('.bg-white\\/95');
+                questionArea.style.opacity = '0';
+                optionsEl.style.opacity = '0';
+                
+                setTimeout(() => {
+                    generateQuestion();
+                    questionArea.style.opacity = '1';
+                    optionsEl.style.opacity = '1';
+                    questionArea.style.transition = 'opacity 0.3s ease';
+                    optionsEl.style.transition = 'opacity 0.3s ease';
+                }, 300);
+                
+            } else {
+                showResult();
+            }
+        }
+
+        function showResult() {
+            gameScreen.classList.remove('flex');
+            gameScreen.classList.add('hidden');
+            resultScreen.classList.remove('hidden');
+            playSound('correct'); // Bunyi kemenangan
+
+            const finalStarsContainer = document.getElementById('final-stars');
+            const finalMessage = document.getElementById('final-message');
+            
+            finalStarsContainer.innerHTML = '';
+            
+            // Tampilkan bintang sebanyak skor
+            if (score === 0) {
+                finalStarsContainer.innerHTML = '🌟 Tetap Semangat! 🌟';
+                finalMessage.innerText = 'Yuk belajar lagi!';
+            } else {
+                for(let i=0; i<score; i++) {
+                    const star = document.createElement('span');
+                    star.className = 'pop-in inline-block';
+                    star.style.animationDelay = `${i * 0.3}s`;
+                    star.innerText = '⭐';
+                    finalStarsContainer.appendChild(star);
+                }
+                
+                if (score === TOTAL_QUESTIONS) {
+                    finalMessage.innerText = 'Luar Biasa! Kamu Pintar Sekali!';
+                    createConfetti();
+                } else if (score > TOTAL_QUESTIONS / 2) {
+                    finalMessage.innerText = 'Bagus! Terus berlatih ya!';
+                } else {
+                    finalMessage.innerText = 'Wah, hampir sempurna. Semangat!';
+                }
+            }
+        }
+
+        function resetGame() {
+            playSound('pop');
+            startGame();
+        }
+
+        function createConfetti() {
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.classList.add('confetti');
+                
+                // Warna acak
+                const colors = ['#f43f5e', '#3b82f6', '#10b981', '#eab308', '#a855f7'];
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                
+                // Posisi awal acak
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.top = '-10px';
+                
+                // Bentuk acak
+                if (Math.random() > 0.5) {
+                    confetti.style.borderRadius = '50%';
+                }
+                
+                document.body.appendChild(confetti);
+
+                // Animasi jatuh
+                const duration = Math.random() * 3 + 2; // 2-5 detik
+                confetti.animate([
+                    { transform: `translate3d(0,0,0) rotate(0deg)`, opacity: 1 },
+                    { transform: `translate3d(${Math.random()*100 - 50}px, 100vh, 0) rotate(${Math.random()*720}deg)`, opacity: 0 }
+                ], {
+                    duration: duration * 1000,
+                    easing: 'cubic-bezier(.37,0,.63,1)',
+                    fill: 'forwards'
+                });
+
+                // Hapus setelah selesai
+                setTimeout(() => {
+                    confetti.remove();
+                }, duration * 1000);
+            }
+        }
+
+        // Inisialisasi Audio on first interaction (kebijakan browser)
+        document.body.addEventListener('click', function initAudio() {
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            document.body.removeEventListener('click', initAudio);
+        }, { once: true });
+
+    </script>
+</body>
+</html>
